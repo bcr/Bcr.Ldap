@@ -15,7 +15,7 @@ public class BerReaderTests
         var tag = reader.ReadTag();
 
         // Assert
-        Assert.Equal(0x30, tag);
+        Assert.Equal((byte) (BerReader.BerTag.Universal | BerReader.BerTag.Constructed | BerReader.BerTag.Sequence), tag);
     }
 
     [Fact]
@@ -46,5 +46,31 @@ public class BerReaderTests
 
         // Assert
         Assert.Equal(0x02, length);
+    }
+
+    [Fact]
+    public void ExpectTag_WhenTagIsExpected_ShouldNotThrowException()
+    {
+        // Arrange
+        var stream = new MemoryStream(new byte[] { 0x30 });
+        var reader = new BerReader(stream);
+
+        // Act
+        reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Constructed | BerReader.BerTag.Sequence);
+
+        // Assert
+        Assert.True(true);
+    }
+
+    [Fact]
+    public void ExpectTag_WhenTagIsNotExpected_ShouldThrowException()
+    {
+        // Arrange
+        var stream = new MemoryStream(new byte[] { 0x30 });
+        var reader = new BerReader(stream);
+
+        // Act
+        // Assert
+        Assert.Throws<InvalidDataException>(() => reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer));
     }
 }

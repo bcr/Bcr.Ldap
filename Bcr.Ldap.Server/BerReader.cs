@@ -4,18 +4,15 @@ namespace Bcr.Ldap.Server;
 
 class BerReader
 {
-    enum BerTagClass : byte
+    public enum BerTag : byte
     {
         Application = 0x40,
         ContextSpecific = 0x80,
         Private = 0xC0,
         Constructed = 0x20,
+        Primitive = 0x00,
         Universal = 0x00,
-        Mask = 0xC0,
-    }
 
-    enum BerTagType : byte
-    {
         EndOfContent = 0x00,
         Boolean = 0x01,
         Integer = 0x02,
@@ -54,6 +51,30 @@ class BerReader
         _stream = stream;
     }
 
+    private byte[] ReadFully(int count)
+    {
+        var buffer = new byte[count];
+        int offset = 0;
+        while (offset < count)
+        {
+            var bytesRead = _stream.Read(buffer, offset, count - offset);
+            if (bytesRead == 0)
+            {
+                throw new EndOfStreamException();
+            }
+
+            offset += bytesRead;
+        }
+
+        return buffer;
+    }
+
+    private byte[] ReadElement()
+    {
+        var length = ReadLength();
+        return ReadFully(length);
+    }
+
     public byte ReadTag()
     {
         var tag = _stream.ReadByte();
@@ -63,6 +84,16 @@ class BerReader
         }
 
         return (byte)tag;
+    }
+
+    public void ExpectTag(BerTag expected)
+    {
+        var tag = ReadTag();
+        var byteExpected = (byte) expected;
+        if (tag != byteExpected)
+        {
+            throw new InvalidDataException($"Expected tag 0x{byteExpected:X2}, but got 0x{tag:X2}.");
+        }
     }
 
     public int ReadLength()
@@ -84,11 +115,14 @@ class BerReader
             throw new InvalidDataException("Indefinite length encoding not supported.");
         }
 
-        var buffer = new byte[count];
-        if (_stream.Read(buffer, 0, count) != count)
-        {
-            throw new EndOfStreamException();
-        }
+        var buffer = ReadFully(count);
+
+        return buffer.Aggregate(0, (total, next) => (total << 8) | next);
+    }
+
+    public int ReadInteger()
+    {
+        var buffer = ReadElement();
 
         return buffer.Aggregate(0, (total, next) => (total << 8) | next);
     }
