@@ -22,4 +22,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Bcr.Ldap.Server\Bcr.Ldap.Server.csproj" />
+  </ItemGroup>
+
 </Project>

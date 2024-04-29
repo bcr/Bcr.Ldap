@@ -14,7 +14,12 @@ class LdapStreamHandler : IStreamHandler
 
     public Task ProcessAsync(Stream stream, CancellationToken stoppingToken)
     {
-        _logger.LogError("ProcessAsync not implemented.");
+        var reader = new BerReader(stream);
+
+        // LDAPMessage ::= SEQUENCE {
+        var tag = reader.ReadTag();
+        var length = reader.ReadLength();
+
         throw new NotImplementedException();
     }
 }
