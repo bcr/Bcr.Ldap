@@ -54,17 +54,8 @@ class BerReader
     private byte[] ReadFully(int count)
     {
         var buffer = new byte[count];
-        int offset = 0;
-        while (offset < count)
-        {
-            var bytesRead = _stream.Read(buffer, offset, count - offset);
-            if (bytesRead == 0)
-            {
-                throw new EndOfStreamException();
-            }
 
-            offset += bytesRead;
-        }
+        _stream.ReadExactly(buffer);
 
         return buffer;
     }
