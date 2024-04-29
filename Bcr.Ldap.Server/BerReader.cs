@@ -45,41 +45,43 @@ class BerReader
     }
 
     private readonly Stream _stream;
+    private readonly CancellationToken _stoppingToken;
 
-    public BerReader(Stream stream)
+    public BerReader(Stream stream, CancellationToken stoppingToken = default)
     {
         _stream = stream;
+        _stoppingToken = stoppingToken;
     }
 
-    private byte[] ReadFully(int count)
+    private async Task<byte[]> ReadFully(int count)
     {
         var buffer = new byte[count];
 
-        _stream.ReadExactly(buffer);
+        await _stream.ReadExactlyAsync(buffer, _stoppingToken);
 
         return buffer;
     }
 
-    private byte[] ReadElement()
+    private async Task<byte[]> ReadElement()
     {
-        var length = ReadLength();
-        return ReadFully(length);
+        var length = await ReadLength();
+        return await ReadFully(length);
     }
 
-    public byte ReadTag()
+    private async Task<byte> ReadByte()
     {
-        var tag = _stream.ReadByte();
-        if (tag == -1)
-        {
-            throw new EndOfStreamException();
-        }
-
-        return (byte)tag;
+        var buffer = await ReadFully(1);
+        return buffer[0];
     }
 
-    public void ExpectTag(BerTag expected)
+    public async Task<byte> ReadTag()
     {
-        var tag = ReadTag();
+        return await ReadByte();
+    }
+
+    public async Task ExpectTag(BerTag expected)
+    {
+        var tag = await ReadTag();
         var byteExpected = (byte) expected;
         if (tag != byteExpected)
         {
@@ -87,13 +89,9 @@ class BerReader
         }
     }
 
-    public int ReadLength()
+    public async Task<int> ReadLength()
     {
-        var length = _stream.ReadByte();
-        if (length == -1)
-        {
-            throw new EndOfStreamException();
-        }
+        var length = await ReadByte();
 
         if (length < 0x80)
         {
@@ -106,14 +104,14 @@ class BerReader
             throw new InvalidDataException("Indefinite length encoding not supported.");
         }
 
-        var buffer = ReadFully(count);
+        var buffer = await ReadFully(count);
 
         return buffer.Aggregate(0, (total, next) => (total << 8) | next);
     }
 
-    public int ReadInteger()
+    public async Task<int> ReadInteger()
     {
-        var buffer = ReadElement();
+        var buffer = await ReadElement();
 
         return buffer.Aggregate(0, (total, next) => (total << 8) | next);
     }

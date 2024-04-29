@@ -35,21 +35,21 @@ class LdapStreamHandler : IStreamHandler
         _logger = logger;
     }
 
-    public Task ProcessAsync(Stream stream, CancellationToken stoppingToken)
+    public async Task ProcessAsync(Stream stream, CancellationToken stoppingToken)
     {
-        var reader = new BerReader(stream);
+        var reader = new BerReader(stream, stoppingToken);
 
         // LDAPMessage ::= SEQUENCE {
-        reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Constructed | BerReader.BerTag.Sequence);
-        var length = reader.ReadLength();
+        await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Constructed | BerReader.BerTag.Sequence);
+        var length = await reader.ReadLength();
 
         // messageID MessageID,
         // MessageID ::= INTEGER (0 ..  maxInt)
         // maxInt INTEGER ::= 2147483647 -- (2^^31 - 1) --
-        reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer);
-        var messageID = reader.ReadInteger();
+        await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer);
+        var messageID = await reader.ReadInteger();
 
-        var tag = reader.ReadTag();
+        var tag = await reader.ReadTag();
         if ((LdapRequestType) tag == LdapRequestType.BindRequest)
         {
             _logger.LogInformation("BindRequest");
