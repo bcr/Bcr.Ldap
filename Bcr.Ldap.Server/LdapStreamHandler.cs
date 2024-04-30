@@ -50,9 +50,15 @@ class LdapStreamHandler : IStreamHandler
         var messageID = await reader.ReadInteger();
 
         var tag = await reader.ReadTag();
+        length = await reader.ReadLength();
+
+        // BindRequest ::= [APPLICATION 0] SEQUENCE {
         if ((LdapRequestType) tag == LdapRequestType.BindRequest)
         {
-            _logger.LogInformation("BindRequest");
+            // version INTEGER (1 .. 127),
+            await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer);
+            var version = await reader.ReadInteger();
+            _logger.LogInformation("Version: {version}", version);            
         }
         throw new NotImplementedException();
     }
