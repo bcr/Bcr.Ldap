@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text;
 
 namespace Bcr.Ldap.Server;
 
@@ -46,6 +47,7 @@ class BerReader
 
     private readonly Stream _stream;
     private readonly CancellationToken _stoppingToken;
+    private int _length;
 
     public BerReader(Stream stream, CancellationToken stoppingToken = default)
     {
@@ -64,8 +66,7 @@ class BerReader
 
     private async Task<byte[]> ReadElement()
     {
-        var length = await ReadLength();
-        return await ReadFully(length);
+        return await ReadFully(_length);
     }
 
     private async Task<byte> ReadByte()
@@ -76,7 +77,9 @@ class BerReader
 
     public async Task<byte> ReadTag()
     {
-        return await ReadByte();
+        var tag = await ReadByte();
+        _length = await ReadLength();
+        return tag;
     }
 
     public async Task ExpectTag(BerTag expected)
@@ -89,7 +92,7 @@ class BerReader
         }
     }
 
-    public async Task<int> ReadLength()
+    private async Task<int> ReadLength()
     {
         var length = await ReadByte();
 
@@ -114,5 +117,23 @@ class BerReader
         var buffer = await ReadElement();
 
         return buffer.Aggregate(0, (total, next) => (total << 8) | next);
+    }
+
+    public async Task<string> ReadExpectedLdapString()
+    {
+        await ExpectTag(BerTag.Universal | BerTag.Primitive | BerTag.OctetString);
+        var buffer = await ReadElement();
+
+        return Encoding.UTF8.GetString(buffer);
+    }
+
+    public async Task<string> ReadExpectedLdapDN()
+    {
+        return await ReadExpectedLdapString();
+    }
+
+    public async Task SkipElement()
+    {
+        await ReadElement();
     }
 }

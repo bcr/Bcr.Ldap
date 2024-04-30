@@ -28,6 +28,55 @@ class LdapStreamHandler : IStreamHandler
         IntermediateResponse = 0x79,
     }
 
+    enum LdapAuthenticationType
+    {
+        Simple = 0x80,
+        SASL = 0xA3,
+    }
+
+    enum LdapResultCode
+    {
+        Success = 0,
+        OperationsError = 1,
+        ProtocolError = 2,
+        TimeLimitExceeded = 3,
+        SizeLimitExceeded = 4,
+        CompareFalse = 5,
+        CompareTrue = 6,
+        AuthMethodNotSupported = 7,
+        StrongerAuthRequired = 8,
+        Referral = 10,
+        AdminLimitExceeded = 11,
+        UnavailableCriticalExtension = 12,
+        ConfidentialityRequired = 13,
+        SaslBindInProgress = 14,
+        NoSuchAttribute = 16,
+        UndefinedAttributeType = 17,
+        InappropriateMatching = 18,
+        ConstraintViolation = 19,
+        AttributeOrValueExists = 20,
+        InvalidAttributeSyntax = 21,
+        NoSuchObject = 32,
+        AliasProblem = 33,
+        InvalidDNSyntax = 34,
+        AliasDereferencingProblem = 36,
+        InappropriateAuthentication = 48,
+        InvalidCredentials = 49,
+        InsufficientAccessRights = 50,
+        Busy = 51,
+        Unavailable = 52,
+        UnwillingToPerform = 53,
+        LoopDetect = 54,
+        NamingViolation = 64,
+        ObjectClassViolation = 65,
+        NotAllowedOnNonLeaf = 66,
+        NotAllowedOnRDN = 67,
+        EntryAlreadyExists = 68,
+        ObjectClassModsProhibited = 69,
+        AffectsMultipleDSAs = 71,
+        Other = 80,
+    }
+
     private readonly ILogger<LdapStreamHandler> _logger;
 
     public LdapStreamHandler(ILogger<LdapStreamHandler> logger)
@@ -41,7 +90,6 @@ class LdapStreamHandler : IStreamHandler
 
         // LDAPMessage ::= SEQUENCE {
         await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Constructed | BerReader.BerTag.Sequence);
-        var length = await reader.ReadLength();
 
         // messageID MessageID,
         // MessageID ::= INTEGER (0 ..  maxInt)
@@ -50,7 +98,6 @@ class LdapStreamHandler : IStreamHandler
         var messageID = await reader.ReadInteger();
 
         var tag = await reader.ReadTag();
-        length = await reader.ReadLength();
 
         // BindRequest ::= [APPLICATION 0] SEQUENCE {
         if ((LdapRequestType) tag == LdapRequestType.BindRequest)
@@ -58,7 +105,13 @@ class LdapStreamHandler : IStreamHandler
             // version INTEGER (1 .. 127),
             await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer);
             var version = await reader.ReadInteger();
-            _logger.LogInformation("Version: {version}", version);            
+            // !!! May need to check version here
+            // name LDAPDN,
+            var name = await reader.ReadExpectedLdapDN();
+            // authentication AuthenticationChoice }
+            tag = await reader.ReadTag();
+            // !!! Implement authentication, skip the element for now
+            await reader.SkipElement();
         }
         throw new NotImplementedException();
     }
