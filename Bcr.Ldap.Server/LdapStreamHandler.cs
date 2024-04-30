@@ -5,13 +5,15 @@ namespace Bcr.Ldap.Server;
 
 class LdapStreamHandler : IStreamHandler
 {
-    enum LdapRequestType
+    enum LdapProtocolOp
     {
         BindRequest = 0x60,
+        BindResponse = 0x61,
         UnbindRequest = 0x42,
         SearchRequest = 0x63,
         SearchResultEntry = 0x64,
         SearchResultDone = 0x65,
+        SearchResultReference = 0x73,
         ModifyRequest = 0x66,
         ModifyResponse = 0x67,
         AddRequest = 0x68,
@@ -84,6 +86,21 @@ class LdapStreamHandler : IStreamHandler
         _logger = logger;
     }
 
+    private async Task HandleBindRequestAsync(BerReader reader)
+    {
+        // version INTEGER (1 .. 127),
+        await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer);
+        var version = await reader.ReadInteger();
+        // !!! May need to check version here
+        // name LDAPDN,
+        var name = await reader.ReadExpectedLdapDN();
+        // authentication AuthenticationChoice }
+        var tag = await reader.ReadTag();
+        // !!! Implement authentication, skip the element for now
+        await reader.SkipElement();
+        _logger.LogInformation("BindRequest: version={version}, name={name}, authentication={tag}", version, name, tag);
+    }
+
     public async Task ProcessAsync(Stream stream, CancellationToken stoppingToken)
     {
         var reader = new BerReader(stream, stoppingToken);
@@ -100,18 +117,9 @@ class LdapStreamHandler : IStreamHandler
         var tag = await reader.ReadTag();
 
         // BindRequest ::= [APPLICATION 0] SEQUENCE {
-        if ((LdapRequestType) tag == LdapRequestType.BindRequest)
+        if ((LdapProtocolOp) tag == LdapProtocolOp.BindRequest)
         {
-            // version INTEGER (1 .. 127),
-            await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer);
-            var version = await reader.ReadInteger();
-            // !!! May need to check version here
-            // name LDAPDN,
-            var name = await reader.ReadExpectedLdapDN();
-            // authentication AuthenticationChoice }
-            tag = await reader.ReadTag();
-            // !!! Implement authentication, skip the element for now
-            await reader.SkipElement();
+            await HandleBindRequestAsync(reader);
         }
         throw new NotImplementedException();
     }
