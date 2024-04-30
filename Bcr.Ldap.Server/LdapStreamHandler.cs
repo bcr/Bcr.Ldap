@@ -1,4 +1,5 @@
 
+using Bcr.Ldap.Server.Messages;
 using Microsoft.Extensions.Logging;
 
 namespace Bcr.Ldap.Server;
@@ -86,19 +87,9 @@ class LdapStreamHandler : IStreamHandler
         _logger = logger;
     }
 
-    private async Task HandleBindRequestAsync(BerReader reader)
+    private void HandleBindRequest(BindRequest request)
     {
-        // version INTEGER (1 .. 127),
-        await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer);
-        var version = await reader.ReadInteger();
-        // !!! May need to check version here
-        // name LDAPDN,
-        var name = await reader.ReadExpectedLdapDN();
-        // authentication AuthenticationChoice }
-        var tag = await reader.ReadTag();
-        // !!! Implement authentication, skip the element for now
-        await reader.SkipElement();
-        _logger.LogInformation("BindRequest: version={version}, name={name}, authentication={tag}", version, name, tag);
+        _logger.LogInformation("BindRequest: {BindRequest}", request);
     }
 
     public async Task ProcessAsync(Stream stream, CancellationToken stoppingToken)
@@ -119,7 +110,8 @@ class LdapStreamHandler : IStreamHandler
         // BindRequest ::= [APPLICATION 0] SEQUENCE {
         if ((LdapProtocolOp) tag == LdapProtocolOp.BindRequest)
         {
-            await HandleBindRequestAsync(reader);
+            var request = await BindRequest.DecodeAsync(reader);
+            HandleBindRequest(request);
         }
         throw new NotImplementedException();
     }
