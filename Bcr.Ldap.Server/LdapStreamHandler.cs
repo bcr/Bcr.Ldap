@@ -7,31 +7,6 @@ namespace Bcr.Ldap.Server;
 
 class LdapStreamHandler : IStreamHandler
 {
-    enum LdapProtocolOp
-    {
-        BindRequest = 0x60,
-        BindResponse = 0x61,
-        UnbindRequest = 0x42,
-        SearchRequest = 0x63,
-        SearchResultEntry = 0x64,
-        SearchResultDone = 0x65,
-        SearchResultReference = 0x73,
-        ModifyRequest = 0x66,
-        ModifyResponse = 0x67,
-        AddRequest = 0x68,
-        AddResponse = 0x69,
-        DelRequest = 0x4A,
-        DelResponse = 0x6B,
-        ModifyDNRequest = 0x6C,
-        ModifyDNResponse = 0x6D,
-        CompareRequest = 0x6E,
-        CompareResponse = 0x6F,
-        AbandonRequest = 0x50,
-        ExtendedRequest = 0x77,
-        ExtendedResponse = 0x78,
-        IntermediateResponse = 0x79,
-    }
-
     enum LdapAuthenticationType
     {
         Simple = 0x80,
@@ -48,7 +23,7 @@ class LdapStreamHandler : IStreamHandler
     private async Task HandleBindRequest(int messageID, BindRequest request, LdapMessageWriter writer)
     {
         var response = new LdapResult(LdapResultCode.Success, string.Empty, string.Empty);
-        await writer.WriteAsync(messageID, (int) LdapProtocolOp.BindResponse, response);
+        await writer.WriteAsync(messageID, LdapProtocolOp.BindResponse, response);
     }
 
     private async Task HandleSearchRequest(int messageID, SearchRequest searchRequest, LdapMessageWriter writer)
@@ -56,7 +31,7 @@ class LdapStreamHandler : IStreamHandler
         _logger.LogInformation("Search request: {SearchRequest}", searchRequest);
         var response = new LdapResult(LdapResultCode.UnwillingToPerform, string.Empty, "Search not implemented");
         _logger.LogInformation("Search response: {Response}", response);
-        await writer.WriteAsync(messageID, (int) LdapProtocolOp.BindResponse, response);
+        await writer.WriteAsync(messageID, LdapProtocolOp.BindResponse, response);
     }
 
     public async Task ProcessAsync(Stream stream, CancellationToken stoppingToken)

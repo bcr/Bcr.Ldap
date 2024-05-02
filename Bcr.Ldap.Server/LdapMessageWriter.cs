@@ -13,7 +13,7 @@ class LdapMessageWriter
         _stoppingToken = stoppingToken;
     }
 
-    public async Task WriteAsync(int messageID, int protocolOpTag, LdapResult result)
+    public async Task WriteAsync(int messageID, LdapProtocolOp protocolOpTag, LdapResult result)
     {
         var derEncoder = new DerEncoder();
 
@@ -26,7 +26,7 @@ class LdapMessageWriter
 
         // protocolOp CHOICE {
         // BindResponse ::= [APPLICATION 1] LDAPResult
-        derEncoder.AddTag(protocolOpTag);
+        derEncoder.AddTag((int) protocolOpTag);
 
         // LDAPResult ::= SEQUENCE {
         // derEncoder.AddTag((byte) (BerReader.BerTag.Universal | BerReader.BerTag.Constructed | BerReader.BerTag.Sequence));
