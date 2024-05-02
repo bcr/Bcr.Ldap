@@ -112,8 +112,9 @@ class BerReader
         return buffer.Aggregate(0, (total, next) => (total << 8) | next);
     }
 
-    public async Task<int> ReadInteger()
+    public async Task<int> ReadExpectedInteger(BerTag tag = BerTag.Universal | BerTag.Primitive | BerTag.Integer)
     {
+        await ExpectTag(tag);
         var buffer = await ReadElement();
 
         return buffer.Aggregate(0, (total, next) => (total << 8) | next);
@@ -135,5 +136,18 @@ class BerReader
     public async Task SkipElement()
     {
         await ReadElement();
+    }
+
+    internal async Task<T> ReadExpectedEnumeratedValue<T>()
+    {
+        var value = await ReadExpectedInteger(BerTag.Universal | BerTag.Primitive | BerTag.Enumerated);
+        return (T) Enum.ToObject(typeof(T), value);
+    }
+
+    internal async Task<bool> ReadExpectedBoolean()
+    {
+        await ExpectTag(BerTag.Universal | BerTag.Primitive | BerTag.Boolean);
+        var buffer = await ReadElement();
+        return buffer[0] != 0;
     }
 }

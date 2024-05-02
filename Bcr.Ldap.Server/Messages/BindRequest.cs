@@ -5,8 +5,7 @@ record BindRequest(int Version, string Name)
     internal static async Task<BindRequest> DecodeAsync(BerReader reader)
     {
         // version INTEGER (1 .. 127),
-        await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Primitive | BerReader.BerTag.Integer);
-        var version = await reader.ReadInteger();
+        var version = await reader.ReadExpectedInteger();
         // !!! May need to check version here
         // name LDAPDN,
         var name = await reader.ReadExpectedLdapDN();
