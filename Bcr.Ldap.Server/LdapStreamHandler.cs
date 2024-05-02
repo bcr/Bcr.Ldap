@@ -44,14 +44,16 @@ class LdapStreamHandler : IStreamHandler
         _logger = logger;
     }
 
-    private void HandleBindRequest(BindRequest request)
+    private async Task HandleBindRequest(int messageID, BindRequest request, LdapMessageWriter writer)
     {
-        _logger.LogInformation("BindRequest: {BindRequest}", request);
+        var response = new LdapResult(LdapResultCode.Success, string.Empty, string.Empty);
+        await writer.WriteAsync(messageID, (int) LdapProtocolOp.BindResponse, response);
     }
 
     public async Task ProcessAsync(Stream stream, CancellationToken stoppingToken)
     {
         var reader = new BerReader(stream, stoppingToken);
+        var writer = new LdapMessageWriter(stream, stoppingToken);
 
         // LDAPMessage ::= SEQUENCE {
         await reader.ExpectTag(BerReader.BerTag.Universal | BerReader.BerTag.Constructed | BerReader.BerTag.Sequence);
@@ -68,7 +70,7 @@ class LdapStreamHandler : IStreamHandler
         if ((LdapProtocolOp) tag == LdapProtocolOp.BindRequest)
         {
             var request = await BindRequest.DecodeAsync(reader);
-            HandleBindRequest(request);
+            await HandleBindRequest(messageID, request, writer);
         }
         throw new NotImplementedException();
     }

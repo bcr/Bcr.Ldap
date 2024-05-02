@@ -43,4 +43,4 @@ enum LdapResultCode
     Other = 80,
 }
 
-record LdapResult(LdapResultCode ResultCode, string MatchedDN, string ErrorMessage);
+record LdapResult(LdapResultCode ResultCode, string MatchedDN, string DiagnosticMessage);
