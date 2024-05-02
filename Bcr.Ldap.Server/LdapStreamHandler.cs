@@ -85,6 +85,9 @@ class LdapStreamHandler : IStreamHandler
                         var request = await BindRequest.DecodeAsync(reader);
                         await HandleBindRequest(messageID, request, writer);
                         break;
+                    case LdapProtocolOp.UnbindRequest:
+                        // !!! Do a bunch of stuff if there are open requests
+                        break;
                     case LdapProtocolOp.SearchRequest:
                         // SearchRequest ::= [APPLICATION 3] SEQUENCE {
                         var searchRequest = await SearchRequest.DecodeAsync(reader);
