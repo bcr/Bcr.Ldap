@@ -86,6 +86,7 @@ class LdapStreamHandler : IStreamHandler
                         await HandleBindRequest(messageID, request, writer);
                         break;
                     case LdapProtocolOp.UnbindRequest:
+                        // UnbindRequest ::= [APPLICATION 2] NULL
                         // !!! Do a bunch of stuff if there are open requests
                         break;
                     case LdapProtocolOp.SearchRequest:
